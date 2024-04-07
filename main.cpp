@@ -74,15 +74,21 @@ string createShoppingCartFilePath(const string& shoppingCartUuid) {
 }
 
 class ShoppingCartProduct {
+    unsigned short int id;
     string name;
     float price;
     unsigned short int quantity;
 
 public:
-    ShoppingCartProduct(string name, float price, unsigned short int quantity) {
+    ShoppingCartProduct(unsigned short int id, string name, float price, unsigned short int quantity) {
+        this->id = id;
         this->name = name;
         this->price = price;
         this->quantity = quantity;
+    }
+
+    unsigned short int getId() {
+        return this->id;
     }
 
     string getName() {
@@ -110,15 +116,17 @@ public:
     }
 
     string toDataFileString() {
+        string idString = std::to_string(this->getId());
         string priceString = std::to_string(this->getPrice());
         string quantityString = std::to_string(this->getQuantity());
-        return this->getName() + DATA_SEPARATOR + priceString + DATA_SEPARATOR + quantityString;
+        return idString + DATA_SEPARATOR + this->getName() + DATA_SEPARATOR + priceString + DATA_SEPARATOR + quantityString;
     }
 
     string to_string() {
+        string idString = std::to_string(this->getId());
         string priceString = std::to_string(this->getPrice());
         string quantityString = std::to_string(this->getQuantity());
-        return "Username: " + this->getName() + ", Password: " + priceString + ", Quantity: " + quantityString;
+        return "Product ID: " + idString +  ", Name: " + this->getName() + ", Price: " + priceString + ", Quantity: " + quantityString;
     }
 };
 
@@ -194,6 +202,7 @@ vector<ShoppingCartProduct> getShoppingCartFileContents(crow::response& Response
             continue;
         }
 
+        int productId;
         string productName;
         float productPrice;
         int productQuantity;
@@ -211,12 +220,14 @@ vector<ShoppingCartProduct> getShoppingCartFileContents(crow::response& Response
 
             switch(currentIndex) {
                 case 0:
+                    productId = atoi(currentStringPart.c_str());
+                case 1:
                     productName = currentStringPart;
                     break;
-                case 1:
+                case 2:
                     productPrice = atof(currentStringPart.c_str());
                     break;
-                case 2:
+                case 3:
                     productQuantity = atoi(currentStringPart.c_str());
                     break;
                 default:
@@ -225,7 +236,7 @@ vector<ShoppingCartProduct> getShoppingCartFileContents(crow::response& Response
             }
 
             if(!invalidLine) {
-                shoppingCartProducts.emplace_back(productName, productPrice, productQuantity);
+                shoppingCartProducts.emplace_back(productId, productName, productPrice, productQuantity);
             }
 
             currentIndex++;
@@ -281,12 +292,12 @@ string returnAllShoppingCartItemsAsAsciiString(crow::response& Response, const s
         if(outputContent == CRITICAL_ERROR_STRING) {
             Response.code = crow::status::INTERNAL_SERVER_ERROR;
             Response.add_header("Content-Type", "text/plain");
-            Response.body = "k"
+            Response.body = "k";
         }
     }
 }
 
-bool removeCartItem(crow::response& Response, const string& shoppingCartUuid, const string& searchName, unsigned short int searchQuantity) {
+bool removeCartItem(crow::response& Response, const string& shoppingCartUuid, unsigned short int productId) {
     string shoppingCartFilePath = createShoppingCartFilePath(shoppingCartUuid);
 
     if(!shoppingCartFileExists(shoppingCartFilePath)) {
@@ -310,7 +321,7 @@ bool removeCartItem(crow::response& Response, const string& shoppingCartUuid, co
         ShoppingCartProduct currentProduct = shoppingCartProducts[i];
 
         // If the current product's name and quantity matches, erase it from the vector
-        if(currentProduct.getName() == searchName && currentProduct.getQuantity() == searchQuantity) {
+        if(currentProduct.getId() == productId) {
             shoppingCartProducts.erase(shoppingCartProducts.begin() + i);
             break;
         }
