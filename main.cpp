@@ -451,8 +451,10 @@ void runProductPageLogic(const crow::request& Request, crow::response& Response,
     }
 
     createCartCookieIfDoesntExist(Request, Response);
-
-    // TODO: serve the page to the user
+    Response.code = crow::status::OK;
+    Response.set_static_file_info_unsafe(htmlFilePath);
+    Response.add_header("Content-Type", "text/html");
+    Response.end();
 }
 
 int main()

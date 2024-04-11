@@ -175,6 +175,8 @@ main.main-content .button {
     font-weight: 700;
     text-transform: uppercase;
     text-align: center;
+    line-height: 1;
+    font-family: inherit;
     padding: 1rem;
     transition: all .3s ease;
 }
