@@ -429,7 +429,30 @@ void runAddToCartLogic(const crow::request& Request, crow::response& Response, i
 }
 
 string getCartUidFromCookie(const crow::request& Request) {
-    // TODO: attempt to get cookie from request header corresponding to CART_COOKIE_NAME
+    const char* cookieName = CART_COOKIE_NAME;
+
+    string cookieHeader = Request.get_header_value("Cookie");
+
+    if(cookieHeader.empty()) {
+        return nullptr;
+    }
+
+    stringstream cookieStringStream(cookieHeader);
+    int currentIndex = 0;
+    string currentHeaderPart;
+
+    // The format we're looking for is shopping_cart_id=uniqueid
+    while(getline(cookieStringStream, currentHeaderPart, '=') && currentIndex < 2) {
+        if(currentIndex == 0 && currentHeaderPart != "Cookie") {
+            return nullptr;
+        }
+    }
+
+    if(currentHeaderPart.empty()) {
+        return nullptr;
+    }
+
+    return currentHeaderPart;
 }
 
 void createCartCookieIfDoesntExist(const crow::request& Request, crow::response& Response) {
