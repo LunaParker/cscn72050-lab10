@@ -5,10 +5,13 @@
 #define SHOPPING_CART_USERNAME "test@example.com"
 #define SHOPPING_CART_PASSWORD "1234"
 #define CRITICAL_ERROR_STRING "CRITICAL_ERROR"
+#define RELATIVE_PUBLIC_PATH "../static/"
+#define CART_COOKIE_NAME "shopping_cart_id"
 
 #include "crow_all.h"
 #include <iostream>
 #include <string>
+#include <regex>
 using namespace std;
 
 static string CRITICAL_ERROR_MESSAGE;
@@ -24,6 +27,43 @@ bool fileExists(const string& filePath) {
     } else {
         return false;
     }
+}
+
+string getPublicPath() {
+    string filePathString = RELATIVE_PUBLIC_PATH;
+    return filePathString;
+}
+
+bool isValidFileName(const string& possibleFileName) {
+    regex fileNamePattern(R"(^(.*)(\.\.)(.*)$)");
+
+    return !regex_match(possibleFileName, fileNamePattern);
+}
+
+void runPublicStaticResourceActions(const crow::request& Request, crow::response& Response, const string& resourceType, const string& inputResourceFileName) {
+    // First we'll do validation to make sure the user hasn't provided any invalid
+    // characters which could grant them access to paths we don't want them to
+
+    if(!isValidFileName(inputResourceFileName)) {
+        Response.code = crow::status::BAD_REQUEST;
+        Response.end();
+        return;
+    }
+
+    // Now that we've validated we have a good file name, we can construct the relative path to the file
+    string filePath = getPublicPath() + resourceType + '/' + inputResourceFileName;
+
+    // We'll check if it exists - if it doesn't exist, we'll return a 404
+    if(!fileExists(filePath)) {
+        Response.code = crow::status::NOT_FOUND;
+        Response.end();
+        return;
+    }
+
+    // All is good, we can now return our static asset
+    Response.code = crow::status::OK;
+    Response.set_static_file_info_unsafe(filePath);
+    Response.end();
 }
 
 bool shoppingCartFileExists(const string& shoppingCartFilePath) {
@@ -378,16 +418,86 @@ bool shouldAppContinue(crow::SimpleApp& app) {
     cerr << "\n\n[CRITICAL ERROR] " << CRITICAL_ERROR_MESSAGE;
 }
 
+void runAddToCartLogic(const crow::request& Request, crow::response& Response, int providedProductId) {
+    // TODO: first check to make sure user has cart_id cookie (maybe make function?)
+
+    // TODO: next, use createShoppingCartFilePath and then shoppingCartFileExists to see
+    // if we are calling createShoppingCartFile (to create a file) or appendToShoppingCartFile
+    // (to add to an existing shopping cart)
+
+    // TODO: finally, redirect to the shopping cart page
+}
+
+string getCartUidFromCookie(const crow::request& Request) {
+    // TODO: attempt to get cookie from request header corresponding to CART_COOKIE_NAME
+}
+
+void createCartCookieIfDoesntExist(const crow::request& Request, crow::response& Response) {
+    // TODO: create a cookie using the Response.set_cookie() function along
+    // with generateShoppingCartUuid if getCartUidFromCookie returns empty
+}
+
+void runProductPageLogic(const crow::request& Request, crow::response& Response, int providedProductId) {
+    // First we'll check if it's a valid product ID by seeing if a corresponding
+    // product page exists
+    // This is to allow for the addition of more products in future
+    string htmlFilePath = getPublicPath() + '/' + "product-" + std::to_string(providedProductId) + ".html";
+
+    // We'll check if it exists - if it doesn't exist, we'll return a 404
+    if(!fileExists(htmlFilePath)) {
+        Response.code = crow::status::NOT_FOUND;
+        Response.end();
+        return;
+    }
+
+    createCartCookieIfDoesntExist(Request, Response);
+
+    // TODO: serve the page to the user
+}
+
 int main()
 {
     crow::SimpleApp app;
 
-    CROW_ROUTE(app, "/")
+    CROW_ROUTE(app, "/products/<int>/<string>")
         .methods(crow::HTTPMethod::GET)
-            ([&app](const crow::request& Request, crow::response& Response) {
-                Response.body = "hi";
-                Response.end();
+                ([&app](const crow::request& Request, crow::response& Response, int inputProductId, string inputProductNamePath) {
+                    runProductPageLogic(Request, Response, inputProductId);
+                });
+
+    CROW_ROUTE(app, "/cart/add/<int>")
+        .methods(crow::HTTPMethod::GET)
+                ([&app](const crow::request& Request, crow::response& Response, int inputProductId) {
+                    runAddToCartLogic(Request, Response, inputProductId);
+                });
+
+    CROW_ROUTE(app, "/images/<string>")
+        .methods(crow::HTTPMethod::GET)
+            ([](const crow::request& Request, crow::response& Response, string inputImageFileName) {
+                runPublicStaticResourceActions(Request, Response, "images", inputImageFileName);
             });
+
+    CROW_ROUTE(app, "/scripts/<string>")
+        .methods(crow::HTTPMethod::GET)
+            ([](const crow::request& Request, crow::response& Response, string inputScriptFileName) {
+                runPublicStaticResourceActions(Request, Response, "scripts", inputScriptFileName);
+            });
+
+    CROW_ROUTE(app, "/styles/<string>")
+        .methods(crow::HTTPMethod::GET)
+            ([](const crow::request& Request, crow::response& Response, string inputStyleFileName) {
+                runPublicStaticResourceActions(Request, Response, "styles", inputStyleFileName);
+            });
+
+    CROW_CATCHALL_ROUTE(app)
+        ([&app](const crow::request& Request, crow::response& Response) {
+            Response.code = crow::status::OK;
+            createCartCookieIfDoesntExist(Request, Response);
+            string filePath = getPublicPath() + "index.html";
+            Response.set_static_file_info_unsafe(filePath);
+            Response.add_header("Content-Type", "text/html");
+            Response.end();
+        });
 
     app.port(23500).multithreaded().run();
 
