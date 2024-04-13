@@ -5,7 +5,8 @@
 }
 
 .index-welcome__container {
-    background-color: #e0d1ff;
+    background-color: var(--accent-very-light-background-color);
+    color: var(--accent-very-light-text-color);
 }
 
 .index-welcome {
@@ -34,7 +35,7 @@
     display: block;
     position: relative;
     padding-bottom: 100%;
-    background-color: #cccccc;
+    background-color: var(--image-background-color);
 }
 
 .index-product__image-container img {

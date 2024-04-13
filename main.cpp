@@ -4,7 +4,6 @@
 #define DATA_SEPARATOR '|'
 #define SHOPPING_CART_USERNAME "test@example.com"
 #define SHOPPING_CART_PASSWORD "1234"
-#define CRITICAL_ERROR_STRING "CRITICAL_ERROR"
 #define RELATIVE_PUBLIC_PATH "../static/"
 #define CART_COOKIE_NAME "shopping_cart_id"
 
@@ -298,8 +297,7 @@ string readShoppingCartAsRawAsciiString(const string& shoppingCartFilePath) {
     ifstream fileReader(shoppingCartFilePathAsCStr);
 
     if(!fileReader.is_open()) {
-        CRITICAL_ERROR_MESSAGE = "Unable to open shopping cart file " + shoppingCartFilePath + " despite it existing";
-        return CRITICAL_ERROR_STRING;
+        return "";
     }
 
     string finalOutput;
@@ -319,22 +317,26 @@ string readShoppingCartAsRawAsciiString(const string& shoppingCartFilePath) {
     return finalOutput;
 }
 
-string returnAllShoppingCartItemsAsAsciiString(crow::response& Response, const string& shoppingCartUuid, bool asRawAsciiString = false) {
+void returnAllShoppingCartItemsAsAsciiString(crow::response& Response, const string& shoppingCartUuid) {
     string shoppingCartFilePath = createShoppingCartFilePath(shoppingCartUuid);
+    Response.add_header("Content-Type", "text/plain");
 
     if(!shoppingCartFileExists(shoppingCartFilePath)) {
-        return "No Products in Cart";
+        Response.code = crow::status::NOT_FOUND;
+        Response.body = "The shopping cart file associated with your session doesn't exist. The shopping cart path is: " + shoppingCartFilePath;
+        return;
     }
 
-    if(asRawAsciiString) {
-        string outputContent = readShoppingCartAsRawAsciiString(shoppingCartFilePath);
+    string outputContent = readShoppingCartAsRawAsciiString(shoppingCartFilePath);
 
-        if(outputContent == CRITICAL_ERROR_STRING) {
-            Response.code = crow::status::INTERNAL_SERVER_ERROR;
-            Response.add_header("Content-Type", "text/plain");
-            Response.body = "k";
-        }
+    if(outputContent.empty()) {
+        Response.code = crow::status::INTERNAL_SERVER_ERROR;
+        Response.body = "Unable to open the given shopping cart file: " + shoppingCartFilePath;
+        return;
     }
+
+    Response.code = crow::status::ACCEPTED;
+    Response.body = outputContent;
 }
 
 bool removeCartItem(crow::response& Response, const string& shoppingCartUuid, unsigned short int productId) {
@@ -408,15 +410,7 @@ bool shoppingCartAuthenticationCheck(const string& inputUsername, const string& 
     return (inputUsername == correctUsername) && (inputPassword == correctPassword);
 }
 
-bool shouldAppContinue(crow::SimpleApp& app) {
-    bool appShouldContinue = CRITICAL_ERROR_MESSAGE.empty();
 
-    if(!appShouldContinue) {
-        app.stop();
-    }
-
-    cerr << "\n\n[CRITICAL ERROR] " << CRITICAL_ERROR_MESSAGE;
-}
 
 void runAddToCartLogic(const crow::request& Request, crow::response& Response, int providedProductId) {
     // TODO: first check to make sure user has cart_id cookie (maybe make function?)
@@ -429,35 +423,58 @@ void runAddToCartLogic(const crow::request& Request, crow::response& Response, i
 }
 
 string getCartUidFromCookie(const crow::request& Request) {
-    const char* cookieName = CART_COOKIE_NAME;
+    const string cookieName = CART_COOKIE_NAME;
 
-    string cookieHeader = Request.get_header_value("Cookie");
+    auto possibleCookieHeaderIterator = Request.headers.find("Cookie");
+    string fullCookieString;
 
-    if(cookieHeader.empty()) {
-        return nullptr;
+    // We check if we've made it through all the client's headers
+    if (possibleCookieHeaderIterator != Request.headers.end()) {
+        // With unordered maps we access the data associated with the key
+        // using the "second" property
+        fullCookieString = possibleCookieHeaderIterator->second;
+    } else {
+        return "";
     }
 
-    stringstream cookieStringStream(cookieHeader);
+    // If the Cookie is set but is empty, this is also not a valid cookie
+    if(fullCookieString.empty()) {
+        return "";
+    }
+
+    stringstream cookieStringStream(fullCookieString);
     int currentIndex = 0;
     string currentHeaderPart;
 
     // The format we're looking for is shopping_cart_id=uniqueid
     while(getline(cookieStringStream, currentHeaderPart, '=') && currentIndex < 2) {
         if(currentIndex == 0 && currentHeaderPart != "Cookie") {
-            return nullptr;
+            return "";
         }
+
+        currentIndex++;
     }
 
     if(currentHeaderPart.empty()) {
-        return nullptr;
+        return "";
     }
 
     return currentHeaderPart;
 }
 
 void createCartCookieIfDoesntExist(const crow::request& Request, crow::response& Response) {
-    // TODO: create a cookie using the Response.set_cookie() function along
-    // with generateShoppingCartUuid if getCartUidFromCookie returns empty
+    const string cookieName = CART_COOKIE_NAME;
+    // First we need to check if the user already has a cookie
+    string userSessionCookie = getCartUidFromCookie(Request);
+
+    // If the user does have a session cookie, we don't need to perform any further logic
+    if(!userSessionCookie.empty()) {
+        return;
+    }
+
+    string newShoppingCartUuid = generateShoppingCartUuid();
+    string cookieValue = cookieName + "=" + newShoppingCartUuid + "; Path=/; Domain=localhost:23500";
+    Response.add_header("Set-Cookie", cookieValue);
 }
 
 void runProductPageLogic(const crow::request& Request, crow::response& Response, int providedProductId) {
@@ -491,7 +508,7 @@ int main()
                 });
 
     CROW_ROUTE(app, "/cart/add/<int>")
-        .methods(crow::HTTPMethod::GET)
+        .methods(crow::HTTPMethod::POST)
                 ([&app](const crow::request& Request, crow::response& Response, int inputProductId) {
                     runAddToCartLogic(Request, Response, inputProductId);
                 });
@@ -521,6 +538,8 @@ int main()
             string filePath = getPublicPath() + "index.html";
             Response.set_static_file_info_unsafe(filePath);
             Response.add_header("Content-Type", "text/html");
+            Response.end();
+
             Response.end();
         });
 

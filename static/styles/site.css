@@ -10,9 +10,12 @@
     --accent-very-dark: #100037;
     --accent-background-color: #4A00E0;
     --accent-background-light-color: #8d55ff;
+    --accent-very-light-background-color: #e0d1ff;
+    --accent-very-light-text-color: #000;
     --accent-font-color: #fff;
     --footer-background-color: #000;
     --footer-font-color: #fff;
+    --image-background-color: #cccccc;
     --paragraph-line-height: 1.2;
     --paragraph-spacing: 1em;
     --default-padding: 2rem;
@@ -182,6 +185,16 @@ main.main-content .button {
 }
 
 main.main-content .button:hover {
+    background-color: var(--accent-dark);
+    color: var(--accent-font-color);
+}
+
+main.main-content .button.button--dark {
+    background-color: var(--accent-very-dark);
+    color: var(--accent-font-color);
+}
+
+main.main-content .button.button--dark:hover {
     background-color: var(--accent-dark);
     color: var(--accent-font-color);
 }

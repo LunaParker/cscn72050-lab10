@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <script>
-        const pageName = "Homepage";
-    </script>
     <link rel="stylesheet" href="/styles/index.css">
+    <title>Homepage | The Metro Shop</title>
+    <script src="/scripts/products.js"></script>
 </head>
 <body>
+<noscript>
+    This site requires Javascript to operate correctly. Please enable it in your browser's settings.
+</noscript>
 <main class="main-content" id="main-content">
     <section class="index-welcome__container">
         <div class="index-welcome">
@@ -14,61 +16,9 @@
             <p>Check out our assortment of neat items below.</p>
         </div>
     </section>
-    <section class="index-products">
-        <a class="index-product" href="/products/1/go-engineer-cap">
-            <div class="index-product__image-container">
-                <img src="/images/product-1.jpg" alt="GO Engineer Cap">
-            </div>
-            <div class="index-product__content">
-                <h2 class="index-product__content__title">
-                    GO Engineer Cap
-                </h2>
-                <div class="button index-product__content__button">
-                    View Product
-                </div>
-            </div>
-        </a>
-        <a class="index-product" href="/products/2/metrolinx-tumbler">
-            <div class="index-product__image-container">
-                <img src="/images/product-2.jpg" alt="Metrolinx Tumbler">
-            </div>
-            <div class="index-product__content">
-                <h2 class="index-product__content__title">
-                    Metrolinx Tumbler
-                </h2>
-                <div class="button index-product__content__button">
-                    View Product
-                </div>
-            </div>
-        </a>
-        <a class="index-product" href="/products/3/presto-laptop-case">
-            <div class="index-product__image-container">
-                <img src="/images/product-3.jpg" alt="PRESTO Laptop Case">
-            </div>
-            <div class="index-product__content">
-                <h2 class="index-product__content__title">
-                    PRESTO Laptop Case
-                </h2>
-                <div class="button index-product__content__button">
-                    View Product
-                </div>
-            </div>
-        </a>
-        <a class="index-product" href="/products/4/presto-t-shirt">
-            <div class="index-product__image-container">
-                <img src="/images/product-4.jpg" alt="PRESTO T-shirt">
-            </div>
-            <div class="index-product__content">
-                <h2 class="index-product__content__title">
-                    PRESTO T-shirt
-                </h2>
-                <div class="button index-product__content__button">
-                    View Product
-                </div>
-            </div>
-        </a>
-    </section>
+    <section class="index-products" id="index-products"></section>
 </main>
 <script src="/scripts/page-setup.js"></script>
+<script src="/scripts/index.js"></script>
 </body>
 </html>

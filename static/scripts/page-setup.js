@@ -37,18 +37,6 @@ function constructHeadTags(elementType, tags) {
     });
 }
 
-function configureSiteHtml() {
-    let htmlElement = getHtmlElement();
-
-    // If we couldn't get the HTML tag, we won't try setting
-    // attributes on it
-    if(!htmlElement) {
-        return;
-    }
-
-    htmlElement.setAttribute('lang', 'en');
-}
-
 function configureSiteHead(siteHeadElement) {
     let metaTags = [
         {
@@ -70,26 +58,17 @@ function configureSiteHead(siteHeadElement) {
     ];
 
     constructHeadTags("link", linkTags);
-
-    let titleElement = document.createElement('title');
-
-    if(pageName) {
-        titleElement.innerHTML = pageName;
-    } else {
-        titleElement.innerHTML = "The Metro Shop";
-    }
-
-    document.head.appendChild(titleElement);
 }
 
 function configureSiteNavbarLinks(navbarLinkContainer) {
     let menuLinks = {
-        "Home": "/",
-        "GO Engineer Cap": "/products/1/go-engineer-cap",
-        "Metrolinx Tumbler": "/products/2/metrolinx-tumbler",
-        "PRESTO Laptop Case": "/products/3/presto-laptop-case",
-        "PRESTO T-shirt": "/products/4/presto-t-shirt"
+        "Home": "/"
     };
+
+    for (const currentProductId in products) {
+        let currentProduct = products[currentProductId];
+        menuLinks[currentProduct.name] = getProductLink(currentProductId, currentProduct);
+    }
 
     for(let link in menuLinks) {
         let menuLinkLi = document.createElement('li');
@@ -185,7 +164,13 @@ function configureSiteFooter() {
 // We'll wait for the document to be fully loaded before populating data
 // in the HTML DOM
 document.addEventListener("DOMContentLoaded", (event) => {
-    configureSiteHtml();
+    // If we don't have products injected, the rest of the generation code
+    // won't work, so we'll just return an error
+    if(!products) {
+        console.error("Failed to load products - did you include products.js?");
+        return;
+    }
+
     configureSiteHead();
     configureSiteNavbar();
     configureSiteFooter();
