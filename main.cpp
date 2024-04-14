@@ -117,11 +117,10 @@ string generateShoppingCartUuid() {
 }
 
 string createShoppingCartFilePath(const string& shoppingCartUuid) {
-    string fileUuid = generateShoppingCartUuid();
     string filePathPrefix = SHOPPING_CART_PATH_PREFIX;
     string filePathSuffix = SHOPPING_CART_PATH_SUFFIX;
 
-    string filePath = filePathPrefix + fileUuid + filePathSuffix;
+    string filePath = filePathPrefix + shoppingCartUuid + filePathSuffix;
 
     return filePath;
 }
@@ -219,8 +218,7 @@ bool appendToShoppingCartFile(const string& shoppingCartUuid, ShoppingCartProduc
         return false;
     }
 
-    fstream shoppingCartFile(shoppingCartFilePath.c_str());
-    shoppingCartFile.open(shoppingCartFilePath, std::ios::out | std::ios::app);
+    ofstream shoppingCartFile(shoppingCartFilePath.c_str(), std::ios::out | std::ios::app);
 
     if(!shoppingCartFile.is_open()) {
         return false;
@@ -340,7 +338,7 @@ string readShoppingCartAsRawAsciiString(const string& shoppingCartFilePath) {
     return finalOutput;
 }
 
-void returnAllShoppingCartItemsAsAsciiString(crow::response& Response, const string& shoppingCartUuid) {
+void returnAllShoppingCartItemsAsAsciiString(const crow::request& Request, crow::response& Response, const string& shoppingCartUuid) {
     string shoppingCartFilePath = createShoppingCartFilePath(shoppingCartUuid);
     Response.add_header("Content-Type", "text/plain");
 
@@ -425,11 +423,11 @@ bool removeCartItem(crow::response& Response, const string& shoppingCartUuid, un
     return true;
 }
 
-void runAddToCartLogic(const crow::request& Request, crow::response& Response, std::unordered_map<unsigned short int, ShoppingCartProduct> products, int providedProductId, string providedProductName) {
-    if(Request.get_header_value("SHOPPING_CART_ID").empty()) {
+void runAddToCartLogic(const crow::request& Request, crow::response& Response, std::unordered_map<unsigned short int, ShoppingCartProduct> products, const string& shoppingCartUuid, int providedProductId, const string& providedProductName) {
+    if(shoppingCartUuid.empty()) {
         Response.code = crow::status::FORBIDDEN;
         Response.add_header("Content-Type", "text/plain");
-        Response.body = "You do not have a shopping cart cookie set. Make sure that your system allows for cookies.";
+        Response.body = "You did not provide your cart's unique ID.";
         Response.end();
         return;
     }
@@ -450,7 +448,7 @@ void runAddToCartLogic(const crow::request& Request, crow::response& Response, s
         return;
     }
 
-    string shoppingCartFilePath = createShoppingCartFilePath(Request.get_header_value("SHOPPING_CART_ID"));
+    string shoppingCartFilePath = createShoppingCartFilePath(shoppingCartUuid);
 
     bool doesShoppingCartFileExist = shoppingCartFileExists(shoppingCartFilePath);
 
@@ -464,9 +462,9 @@ void runAddToCartLogic(const crow::request& Request, crow::response& Response, s
     bool addedToCartSuccess = false;
 
     if(doesShoppingCartFileExist) {
-        addedToCartSuccess = appendToShoppingCartFile(Request.get_header_value("SHOPPING_CART_ID"), newProduct);
+        addedToCartSuccess = appendToShoppingCartFile(shoppingCartUuid, newProduct);
     } else {
-        addedToCartSuccess = createShoppingCartFile(Request.get_header_value("SHOPPING_CART_ID"), newProduct);
+        addedToCartSuccess = createShoppingCartFile(shoppingCartUuid, newProduct);
     }
 
     if(!addedToCartSuccess) {
@@ -482,7 +480,6 @@ void runAddToCartLogic(const crow::request& Request, crow::response& Response, s
     Response.code = crow::status::FOUND;
     Response.add_header("Location", "/cart");
     Response.end();
-    return;
 }
 
 void runProductPageLogic(const crow::request& Request, crow::response& Response, int providedProductId) {
@@ -512,7 +509,60 @@ bool shoppingCartAuthenticationCheck(const string& inputUsername, const string& 
     return (inputUsername == correctUsername) && (inputPassword == correctPassword);
 }
 
-void runCartAuthenticationLogic(const crow::request& Request, crow::response& Response) {
+void runCartRawAsciiGetRequest(crow::response& Response, bool authenticated, const string& shoppingCartUuid) {
+    Response.add_header("Content-Type", "text/plain");
+
+    if(!authenticated) {
+        Response.code = crow::status::UNAUTHORIZED;
+        Response.body = "You must be authenticated to view this page.";
+        Response.end();
+        return;
+    }
+
+    Response.code = crow::status::OK;
+    string shoppingCartRawContents = readShoppingCartAsRawAsciiString(createShoppingCartFilePath(shoppingCartUuid));
+    Response.body = shoppingCartRawContents;
+    Response.end();
+}
+
+void runCartPaymentSuccessPage(const crow::request& Request, crow::response& Response, bool authenticated, const string& shoppingCartUuid) {
+    if(!authenticated) {
+        Response.code = crow::status::UNAUTHORIZED;
+        Response.add_header("Content-Type", "text/plain");
+        Response.body = "You must be authenticated to view this page.";
+        Response.end();
+        return;
+    }
+
+    const string potentialShoppingCartPath = createShoppingCartFilePath(shoppingCartUuid);
+
+    if(!shoppingCartFileExists(potentialShoppingCartPath)) {
+        Response.code = crow::status::NOT_FOUND;
+        Response.add_header("Content-Type", "text/plain");
+        Response.body = "The shopping cart you've provided does not exist";
+    }
+
+    Response.code = crow::status::ACCEPTED;
+    string filePath = getPublicPath() + "payment-success.html";
+    Response.set_static_file_info_unsafe(filePath);
+    Response.add_header("Content-Type", "text/html");
+    Response.end();
+}
+
+void runCartLoginPage(const crow::request& Request, crow::response& Response, bool shouldShowError = false) {
+    if(shouldShowError) {
+        Response.code = crow::status::UNAUTHORIZED;
+    } else {
+        Response.code = 402;
+    }
+
+    string filePath = getPublicPath() + "login.html";
+    Response.set_static_file_info_unsafe(filePath);
+    Response.add_header("Content-Type", "text/html");
+    Response.end();
+}
+
+bool runCartAuthenticationLogic(const crow::request& Request, crow::response& Response, const string& shoppingCartUuid) {
     // First we need to make sure the user provided all necessary
     // info in their post request
     if(!Request.get_body_params().get("username") || !Request.get_body_params().get("password")) {
@@ -520,43 +570,32 @@ void runCartAuthenticationLogic(const crow::request& Request, crow::response& Re
         Response.add_header("Content-Type", "text/plain");
         Response.body = "Your login attempt is missing all necessary fields";
         Response.end();
-        return;
+        return false;
     }
 
     bool correctLogin = shoppingCartAuthenticationCheck(Request.get_body_params().get("username"), Request.get_body_params().get("password"));
 
     if(!correctLogin) {
-        Response.code = crow::status::UNAUTHORIZED;
-        string filePath = getPublicPath() + "login.html";
-        Response.set_static_file_info_unsafe(filePath);
-        Response.add_header("Content-Type", "text/html");
-        Response.end();
-        return;
+        runCartLoginPage(Request, Response, true);
+        return false;
     }
 
-
+    Response.code = crow::status::FOUND;
+    Response.add_header("Location", "/cart/" + shoppingCartUuid + "/payment/success");
+    return true;
 }
 
-void runCartLoginPage(const crow::request& Request, crow::response& Response) {
-    Response.code = 402;
-    string filePath = getPublicPath() + "login.html";
-    Response.set_static_file_info_unsafe(filePath);
-    Response.add_header("Content-Type", "text/html");
-    Response.end();
-}
-
-void runCartPageLogic(const crow::request& Request, crow::response& Response) {
+bool runCartPageLogic(const crow::request& Request, crow::response& Response, const string& shoppingCartUuid) {
     switch(Request.method) {
         case crow::HTTPMethod::GET:
             runCartLoginPage(Request, Response);
-            break;
+            return false;
         case crow::HTTPMethod::POST:
-            runCartAuthenticationLogic(Request, Response);
-            break;
+            return runCartAuthenticationLogic(Request, Response, shoppingCartUuid);
         default:
             Response.code = crow::status::METHOD_NOT_ALLOWED;
             Response.end();
-            break;
+            return false;
     }
 }
 
@@ -571,8 +610,6 @@ struct shoppingCartCookieParser : public crow::CookieParser {
             ctx.set_cookie(shoppingCartCookieName, newShoppingCartUuid)
                 .path("/");
         }
-
-        req.add_header("SHOPPING_CART_ID", ctx.get_cookie(shoppingCartCookieName));
     }
 
     void after_handle(crow::request& req, crow::response& res, context& ctx)
@@ -584,6 +621,7 @@ struct shoppingCartCookieParser : public crow::CookieParser {
 int main()
 {
     crow::App<shoppingCartCookieParser> app;
+
     ShoppingCartProduct productOne = ShoppingCartProduct(1, "GO Engineer Cap", 19.95, 0);
     ShoppingCartProduct productTwo = ShoppingCartProduct(2, "Metrolinx Tumbler", 35.56, 0);
     ShoppingCartProduct productThree = ShoppingCartProduct(3, "PRESTO Laptop Case", 30.50, 0);
@@ -604,14 +642,48 @@ int main()
 
     CROW_ROUTE(app, "/cart")
         .methods(crow::HTTPMethod::GET, crow::HTTPMethod::POST)
-            ([](const crow::request& Request, crow::response& Response) {
-                runCartPageLogic(Request, Response);
+            ([&](const crow::request& Request, crow::response& Response) {
+                const string shoppingCartCookieName = CART_COOKIE_NAME;
+                auto& ctx = app.get_context<shoppingCartCookieParser>(Request);
+                string shoppingCartUuid = ctx.get_cookie(shoppingCartCookieName);
+
+                bool successfullyAuthenticated = runCartPageLogic(Request, Response, shoppingCartUuid);
+
+                if(successfullyAuthenticated && Request.method == crow::HTTPMethod::POST) {
+                    ctx.set_cookie("authenticated", "true")
+                        .path("/");
+                    Response.end();
+                }
             });
 
-    CROW_ROUTE(app, "/cart/add/<int>/<string>")
+    CROW_ROUTE(app, "/cart/<string>/add/<int>/<string>")
         .methods(crow::HTTPMethod::POST)
-                ([&](const crow::request& Request, crow::response& Response, int inputProductId, string inputSlug) {
-                    runAddToCartLogic(Request, Response, products, inputProductId, inputSlug);
+                ([&](const crow::request& Request, crow::response& Response, string shoppingCartUuid, int providedProductId, string providedProductName) {
+                    auto& ctx = app.get_context<shoppingCartCookieParser>(Request);
+                    ctx.set_cookie("cart_filled", "true")
+                        .path("/");
+
+                    runAddToCartLogic(Request, Response, products, shoppingCartUuid, providedProductId, providedProductName);
+                });
+
+    CROW_ROUTE(app, "/cart/<string>/raw")
+        .methods(crow::HTTPMethod::GET)
+                ([&](const crow::request& Request, crow::response& Response, string shoppingCartUuid) {
+                    auto& ctx = app.get_context<shoppingCartCookieParser>(Request);
+                    string authenticatedCookie = ctx.get_cookie("authenticated");
+                    bool authenticationSuccessful = (authenticatedCookie == "true");
+
+                    runCartRawAsciiGetRequest(Response, authenticationSuccessful, shoppingCartUuid);
+                });
+
+    CROW_ROUTE(app, "/cart/<string>/payment/success")
+        .methods(crow::HTTPMethod::GET)
+                ([&](const crow::request& Request, crow::response& Response, string shoppingCartUuid) {
+                    auto& ctx = app.get_context<shoppingCartCookieParser>(Request);
+                    string authenticatedCookie = ctx.get_cookie("authenticated");
+                    bool authenticationSuccessful = (authenticatedCookie == "true");
+
+                    runCartPaymentSuccessPage(Request, Response, authenticationSuccessful, shoppingCartUuid);
                 });
 
     CROW_ROUTE(app, "/images/<string>")

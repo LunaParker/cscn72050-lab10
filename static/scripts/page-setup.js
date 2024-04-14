@@ -1,6 +1,14 @@
 // This JS file acts as a "Template" for the HTML files (since we
 // were instructed not to use Crow's templating engine)
 
+// Although I'm decent at Javascript, there's no way I could
+// make a function as clean and efficient at getting cookies as
+// the one below:
+// https://stackoverflow.com/questions/5639346/what-is-the-shortest-function-for-reading-a-cookie-by-name-in-javascript#answer-25490531
+const getCookieValue = (name) => (
+    document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+)
+
 function getHtmlElement() {
     let possibleHtmlElements = document.getElementsByTagName('html');
 
@@ -68,6 +76,12 @@ function configureSiteNavbarLinks(navbarLinkContainer) {
     for (const currentProductId in products) {
         let currentProduct = products[currentProductId];
         menuLinks[currentProduct.name] = getProductLink(currentProductId, currentProduct);
+    }
+
+    let possibleCartFilledCookie = getCookieValue("cart_filled");
+
+    if(possibleCartFilledCookie && possibleCartFilledCookie === "true") {
+        menuLinks["Cart"] = "/cart";
     }
 
     for(let link in menuLinks) {

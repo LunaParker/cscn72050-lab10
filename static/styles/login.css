@@ -1,0 +1,36 @@
+main.main-content {
+    padding: calc(var(--default-padding) * 2) 0 0;
+}
+
+.login-container {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.login-box {
+    background-color: var(--accent-very-light-background-color);
+    color: var(--accent-very-light-text-color);
+    padding: var(--default-padding);
+}
+
+.login-box__title {
+    margin: 0 0 calc(var(--default-padding));
+}
+
+.login-box__title span {
+    font-size: 1.3rem;
+    font-weight: 400;
+}
+
+.login-box__field {
+    width: 100%;
+    margin-bottom: var(--default-padding);
+}
+
+.login-box__field input {
+    width: 100% !important;
+}
+
+.login-box__button {
+    width: 100% !important;
+}

@@ -168,7 +168,7 @@ main.main-content label {
     margin-bottom: 0.5em;
 }
 
-main.main-content input[type="text"], main.main-content input[type="email"], main.main-content input[type="number"], main.main-content input[type="tel"] {
+main.main-content input[type="text"], main.main-content input[type="email"], main.main-content input[type="number"], main.main-content input[type="tel"], main.main-content input[type="password"] {
     --webkit-appearance: none;
     appearance: none;
     border: 2px solid var(--accent-background-light-color);
@@ -186,7 +186,7 @@ main.main-content input[type="text"], main.main-content input[type="email"], mai
     transition: all .3s ease;
 }
 
-main.main-content input[type="text"]:hover, main.main-content input[type="email"]:hover, main.main-content input[type="number"]:hover, main.main-content input[type="tel"]:hover, main.main-content input[type="text"]:focus, main.main-content input[type="email"]:focus, main.main-content input[type="number"]:focus, main.main-content input[type="tel"]:focus {
+main.main-content input[type="text"]:hover, main.main-content input[type="email"]:hover, main.main-content input[type="number"]:hover, main.main-content input[type="tel"]:hover, main.main-content input[type="password"]:hover, main.main-content input[type="text"]:focus, main.main-content input[type="email"]:focus, main.main-content input[type="number"]:focus, main.main-content input[type="tel"]:focus, main.main-content input[type="password"]:focus {
     border-color: var(--accent-background-color);
     border-radius: 0;
     background-color: var(--body-background-color);

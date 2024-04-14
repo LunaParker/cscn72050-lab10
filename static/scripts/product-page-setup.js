@@ -10,7 +10,7 @@ function generateBackRow(mainContainer) {
     backRow.appendChild(backRowButton);
 }
 
-function generateTopRow(mainContainer) {
+function generateTopRow(mainContainer, shoppingCartUuid) {
     let productRow = document.createElement('section');
     productRow.setAttribute('id', 'top-product-row');
     productRow.classList.add("top-product-row");
@@ -59,7 +59,7 @@ function generateTopRow(mainContainer) {
 
     let quantityAndCartForm = document.createElement('form');
     quantityAndCartForm.setAttribute('method', 'POST');
-    quantityAndCartForm.setAttribute('action', "/cart/add/" + window.productId + "/" + window.currentProduct.slug);
+    quantityAndCartForm.setAttribute('action', "/cart/" + shoppingCartUuid + "/add/" + window.productId + "/" + window.currentProduct.slug);
     quantityAndCartForm.classList.add('top-product-row__form');
     productRowContentContainer.appendChild(quantityAndCartForm);
 
@@ -90,7 +90,7 @@ function generateTopRow(mainContainer) {
     quantityAndCartForm.appendChild(submitButton);
 }
 
-function createProductPageContent() {
+function createProductPageContent(shoppingCartUuid) {
     let mainContainer = document.getElementById('main-content');
 
     // If for some reason the main container doesn't exist, we'll stop here
@@ -102,7 +102,7 @@ function createProductPageContent() {
     generateBackRow(mainContainer);
 
     /* MAIN ROW */
-    generateTopRow(mainContainer);
+    generateTopRow(mainContainer, shoppingCartUuid);
 }
 
 function getProductId() {
@@ -124,7 +124,14 @@ document.addEventListener("DOMContentLoaded", (event) => {
         return;
     }
 
+    let possibleShoppingCartUuid = getCookieValue("shopping_cart_id");
+
+    if(!possibleShoppingCartUuid || possibleShoppingCartUuid.length < 1 || possibleShoppingCartUuid === "") {
+        console.error("Could not create the product page as there is no shopping cart ID provided by the server");
+        return;
+    }
+
     window.currentProduct = products[window.productId.toString()];
 
-    createProductPageContent();
+    createProductPageContent(possibleShoppingCartUuid);
 });

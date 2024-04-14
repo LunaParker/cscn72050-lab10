@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="/styles/login.css">
     <title>Log In | The Metro Shop</title>
     <script src="/scripts/products.js"></script>
 </head>
@@ -8,7 +9,28 @@
 <noscript>
     This site requires Javascript to operate correctly. Please enable it in your browser's settings.
 </noscript>
-<main class="main-content" id="main-content"></main>
+<main class="main-content" id="main-content">
+    <div class="login-container">
+        <form class="login-box" method="POST" action="/cart">
+            <h1 class="login-box__title">
+                Please log in
+                <br>
+                <span>to view your cart</span>
+            </h1>
+            <div class="login-box__field">
+                <label for="username">Username</label>
+                <input id="username" type="text" name="username" required>
+            </div>
+            <div class="login-box__field">
+                <label for="password">Password</label>
+                <input id="password" type="password" name="password" required>
+            </div>
+            <button type="submit" class="button login-box__button">
+                Log In
+            </button>
+        </form>
+    </div>
+</main>
 <script src="/scripts/page-setup.js"></script>
 </body>
 </html>
