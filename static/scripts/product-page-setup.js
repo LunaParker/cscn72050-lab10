@@ -43,6 +43,10 @@ function generateTopRow(mainContainer) {
     productTitleElement.innerHTML = window.currentProduct.name;
     productRowContentContainer.appendChild(productTitleElement);
 
+    let productPriceElement = document.createElement('h2');
+    productPriceElement.innerHTML = "$" + (window.currentProduct.price).toFixed(2).toString();
+    productRowContentContainer.appendChild(productPriceElement);
+
     let productDescriptionElement = document.createElement('div');
     productDescriptionElement.classList.add('top-product-row__description');
     productDescriptionElement.innerHTML = window.currentProduct.description;
@@ -55,11 +59,21 @@ function generateTopRow(mainContainer) {
 
     let quantityAndCartForm = document.createElement('form');
     quantityAndCartForm.setAttribute('method', 'POST');
-    quantityAndCartForm.setAttribute('action', "/cart/add/" + window.productId);
+    quantityAndCartForm.setAttribute('action', "/cart/add/" + window.productId + "/" + window.currentProduct.slug);
     quantityAndCartForm.classList.add('top-product-row__form');
     productRowContentContainer.appendChild(quantityAndCartForm);
 
+    let quantityContainer = document.createElement('div');
+    quantityContainer.classList.add("top-product-row__form__quantity");
+    quantityAndCartForm.appendChild(quantityContainer);
+
+    let quantityLabel = document.createElement('label');
+    quantityLabel.setAttribute('for', 'quantity-input');
+    quantityLabel.innerHTML = "Quantity";
+    quantityContainer.appendChild(quantityLabel);
+
     let quantityField = document.createElement('input');
+    quantityField.setAttribute('id', 'quantity-input')
     quantityField.setAttribute('name', 'quantity');
     quantityField.setAttribute('type', 'number');
     quantityField.setAttribute('required', '');
@@ -67,7 +81,7 @@ function generateTopRow(mainContainer) {
     quantityField.setAttribute('max', '10');
     quantityField.setAttribute('value', '1');
     quantityField.classList.add('top-product-row__form__quantity');
-    quantityAndCartForm.appendChild(quantityField);
+    quantityContainer.appendChild(quantityField);
 
     let submitButton = document.createElement('button');
     submitButton.setAttribute('type', 'submit');

@@ -40,3 +40,28 @@
     object-fit: contain;
 }
 
+.top-product-row__content-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.top-product-row__spacer {
+    flex-grow: 1;
+}
+
+.top-product-row__form {
+    margin: calc(var(--default-padding) * 2) 0 0;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+}
+
+.top-product-row__form__quantity input, .top-product-row__form__button {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    height: 50px !important;
+}
+
+.top-product-row__form__quantity {
+    margin-right: calc(var(--default-padding) / 2);
+}

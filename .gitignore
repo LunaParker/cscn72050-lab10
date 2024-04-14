@@ -29,3 +29,5 @@ cmake-build-*/
 # End JetBrains Gitignore
 
 build/
+
+**.zip

@@ -24,6 +24,11 @@ function generateProductCard(currentProductId, currentProductObject, productsGri
     productContentTitle.innerHTML = currentProductObject.name;
     productContentContainer.appendChild(productContentTitle);
 
+    let productContentPrice = document.createElement('p');
+    productContentPrice.classList.add("index-product__content__price");
+    productContentPrice.innerHTML = "$" + (currentProductObject.price).toFixed(2).toString();
+    productContentContainer.appendChild(productContentPrice);
+
     let productContentButton = document.createElement('div');
     productContentButton.classList.add("button", "index-product__content__button");
     productContentButton.innerHTML = "View Product";

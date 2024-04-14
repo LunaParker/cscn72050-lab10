@@ -53,5 +53,12 @@
 
 .index-product__content__title {
     color: var(--body-font-color);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
+}
+
+.index-product__content__price {
+    color: var(--accent-very-dark);
+    font-size: 1.3rem;
+    line-height: 0;
+    margin: 0 0 var(--default-padding);
 }

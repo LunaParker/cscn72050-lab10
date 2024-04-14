@@ -157,6 +157,43 @@ main.main-content h3 {
     font-size: var(--medium-heading-size);
 }
 
+main.main-content label {
+    font-size: 1rem;
+    text-transform: uppercase;
+    display: inline-block;
+    font-family: inherit;
+    color: var(--accent-dark);
+    line-height: 1;
+    font-weight: bold;
+    margin-bottom: 0.5em;
+}
+
+main.main-content input[type="text"], main.main-content input[type="email"], main.main-content input[type="number"], main.main-content input[type="tel"] {
+    --webkit-appearance: none;
+    appearance: none;
+    border: 2px solid var(--accent-background-light-color);
+    background-color: var(--body-background-color);
+    color: var(--body-font-color);
+    border-radius: 0;
+    line-height: 1;
+    display: block;
+    padding: calc(var(--default-padding) / 2);
+    margin: 0;
+    font-family: inherit;
+    font-size: 1.2rem;
+    height: auto;
+    width: auto;
+    transition: all .3s ease;
+}
+
+main.main-content input[type="text"]:hover, main.main-content input[type="email"]:hover, main.main-content input[type="number"]:hover, main.main-content input[type="tel"]:hover, main.main-content input[type="text"]:focus, main.main-content input[type="email"]:focus, main.main-content input[type="number"]:focus, main.main-content input[type="tel"]:focus {
+    border-color: var(--accent-background-color);
+    border-radius: 0;
+    background-color: var(--body-background-color);
+    color: var(--body-font-color);
+    outline: none;
+}
+
 main.main-content a:not(.button) {
     color: var(--accent-dark);
     font-weight: 700;
@@ -181,6 +218,7 @@ main.main-content .button {
     line-height: 1;
     font-family: inherit;
     padding: 1rem;
+    cursor: pointer;
     transition: all .3s ease;
 }
 
